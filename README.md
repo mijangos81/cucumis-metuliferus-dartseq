@@ -1,5 +1,7 @@
 # Genetic diversity of *Cucumis metuliferus* (DArT-seq)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22765468.svg)](https://doi.org/10.5281/zenodo.22765468)
+
 Reproducible analysis of DArT-seq SNP genotyping of the African horned cucumber
 (*Cucumis metuliferus*), accompanying:
 
@@ -93,5 +95,7 @@ core-subset retention) are printed to the console.
 
 ## Citation
 
-Please cite the manuscript above and the dartRverse suite (Mijangos *et al.*,
+Please cite the manuscript above, this archive (Zenodo, concept DOI
+[10.5281/zenodo.22765468](https://doi.org/10.5281/zenodo.22765468), which always
+resolves to the latest version), and the dartRverse suite (Mijangos *et al.*,
 *Methods in Ecology and Evolution*; <https://github.com/green-striped-gecko/dartRverse>).
