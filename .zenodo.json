@@ -1,0 +1,29 @@
+{
+  "title": "Data and code for: DArT-based characterisation of genetic diversity in genotypes of Cucumis metuliferus collected from SACU",
+  "upload_type": "dataset",
+  "description": "Raw DArT-seq SNP report and sample metadata for 120 Cucumis metuliferus (African horned cucumber) genotypes collected across the Southern African Customs Union (Botswana, Eswatini, Namibia and South Africa), together with a single R script (analysis.R, dartRverse) that reproduces every result and figure of Koopa et al. (2026), PLOS ONE: SNP filtering, diversity indices, PCA and its robustness to MAF filtering, genomic relationship matrix, dendrogram, fastSTRUCTURE population structure (K = 1 to 10, ten replicates), AMOVA, and the selection and validation of a 35-genotype core subset.",
+  "creators": [
+    {"name": "Koopa, Katlego G.", "affiliation": "Department of Environmental Sciences, University of South Africa, Johannesburg, South Africa"},
+    {"name": "Figlan, Sandiswa", "affiliation": "Department of Agriculture and Animal Health, University of South Africa, Johannesburg, South Africa"},
+    {"name": "Yessoufou, Kowiyou", "affiliation": "African Centre for DNA Barcoding, Department of Botany and Plant Biotechnology, University of Johannesburg, Johannesburg, South Africa"},
+    {"name": "Maluleke, Mzwandile K.", "affiliation": "Department of Environmental Sciences, University of South Africa, Johannesburg, South Africa"},
+    {"name": "Mijangos, Luis", "affiliation": "Diversity Arrays Technology, University of Canberra, Canberra, ACT, Australia"}
+  ],
+  "keywords": [
+    "Cucumis metuliferus",
+    "African horned cucumber",
+    "DArT-seq",
+    "SNP markers",
+    "genetic diversity",
+    "population structure",
+    "genotyping by sequencing",
+    "core collection",
+    "dartRverse"
+  ],
+  "license": "MIT",
+  "access_right": "open",
+  "language": "eng",
+  "related_identifiers": [
+    {"identifier": "https://github.com/mijangos81/cucumis-metuliferus-dartseq", "relation": "isSupplementTo", "resource_type": "software"}
+  ]
+}

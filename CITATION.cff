@@ -1,0 +1,47 @@
+cff-version: 1.2.0
+message: "If you use these data or code, please cite the manuscript and this repository."
+title: "Data and code for: DArT-based characterisation of genetic diversity in genotypes of Cucumis metuliferus collected from SACU"
+type: dataset
+license: MIT
+repository-code: "https://github.com/mijangos81/cucumis-metuliferus-dartseq"
+authors:
+  - family-names: Koopa
+    given-names: Katlego G.
+    affiliation: "Department of Environmental Sciences, University of South Africa, Johannesburg, South Africa"
+  - family-names: Figlan
+    given-names: Sandiswa
+    affiliation: "Department of Agriculture and Animal Health, University of South Africa, Johannesburg, South Africa"
+  - family-names: Yessoufou
+    given-names: Kowiyou
+    affiliation: "African Centre for DNA Barcoding, Department of Botany and Plant Biotechnology, University of Johannesburg, Johannesburg, South Africa"
+  - family-names: Maluleke
+    given-names: Mzwandile K.
+    affiliation: "Department of Environmental Sciences, University of South Africa, Johannesburg, South Africa"
+  - family-names: Mijangos
+    given-names: Luis
+    affiliation: "Diversity Arrays Technology, University of Canberra, Canberra, ACT, Australia"
+keywords:
+  - Cucumis metuliferus
+  - African horned cucumber
+  - DArT-seq
+  - SNP markers
+  - genetic diversity
+  - population structure
+  - core collection
+  - dartRverse
+preferred-citation:
+  type: article
+  title: "DArT-based characterisation of genetic diversity in genotypes of Cucumis metuliferus collected from South African Customs Union (SACU)"
+  journal: "PLOS ONE"
+  year: 2026
+  authors:
+    - family-names: Koopa
+      given-names: Katlego G.
+    - family-names: Figlan
+      given-names: Sandiswa
+    - family-names: Yessoufou
+      given-names: Kowiyou
+    - family-names: Maluleke
+      given-names: Mzwandile K.
+    - family-names: Mijangos
+      given-names: Luis
