@@ -442,6 +442,18 @@ if (file.exists("outputs/faststructure_Q_best.csv")) {
   size_rank <- rank(-table(comp), ties.method = "first")             # renumber clusters by size (1 = largest)
   Q$cluster <- paste0("C", size_rank[as.character(comp)])
   write.csv(Q[, c("ind.name", "location", "cluster")], "outputs/cluster_assignment.csv", row.names = FALSE)
+  # Diversity within each cluster: with the between-cluster (Wahlund) component
+  # removed, FIS shows how much of the homozygote excess is inbreeding.
+  cl_ind <- Q$cluster[match(indNames(gl), Q$ind.name)]
+  div_cl <- do.call(rbind, lapply(c(sort(unique(cl_ind)), "all"), function(k) {
+    Mk <- if (k == "all") M else M[cl_ind == k, , drop = FALSE]
+    afk <- colMeans(Mk, na.rm = TRUE) / 2; Hek <- mean(2 * afk * (1 - afk), na.rm = TRUE); Hok <- mean(colMeans(Mk == 1, na.rm = TRUE), na.rm = TRUE)
+    data.frame(cluster = k, n = nrow(Mk), Ho = round(Hok, 4), He = round(Hek, 4), FIS = round(1 - Hok / Hek, 3)) }))
+  print(div_cl); write.csv(div_cl, "outputs/diversity_by_cluster.csv", row.names = FALSE)
+  He_cl <- setNames(div_cl$He[div_cl$cluster != "all"], div_cl$cluster[div_cl$cluster != "all"])
+  F_ind <- 1 - rowMeans(M == 1, na.rm = TRUE) / He_cl[cl_ind]           # individual F relative to own cluster
+  write.csv(data.frame(ind.name = indNames(gl), cluster = cl_ind, F_ind = round(F_ind, 3)), "outputs/inbreeding_by_individual.csv", row.names = FALSE)
+  cat(sprintf("Individual F vs own cluster: median %.2f; below 0.5: %s\n", median(F_ind), paste(indNames(gl)[F_ind < 0.5], collapse = ", ")))
   xt <- table(location = Q$location, cluster = Q$cluster)
   print(xt); write.csv(as.data.frame.matrix(xt), "outputs/location_by_cluster.csv")
   strata(gi) <- data.frame(cluster = Q$cluster[match(indNames(gl), Q$ind.name)])
