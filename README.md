@@ -89,9 +89,9 @@ core-subset retention) are printed to the console.
   for the diversity and core-subset aims. Step 4 shows that removing them does
   not change the PCA structure (2,115 SNPs at MAF ≥ 0.05; PC1–3 score
   correlations ≥ 0.999).
-- The CLUMPAK grouping of fastSTRUCTURE replicate runs into modes is done on the
-  CLUMPAK web server with the `outputs/faststructure/rep_*.<K>.meanQ` files; it
-  is not reproduced in R.
+- Replicate fastSTRUCTURE runs are aligned (CLUMPP) and grouped into modes
+  (CLUMPAK method) in R by `dartR.popgen::gl.plot.faststructure()`; Figure 5
+  shows one row per mode for K = 2 to 6.
 - The manuscript's kinship estimates for Figure 10 come from the external
   program EMIBD9; the script draws the same figure from the additive
   relationship matrix of step 5 so it is reproducible from R alone.

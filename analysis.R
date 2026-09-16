@@ -417,9 +417,6 @@ if (!fs_ok) {
     ggsave("figures/Figure5.png", p5, width = 7.5, height = 6, dpi = 300)
     write.csv(d, "outputs/faststructure_modes_K2-6.csv", row.names = FALSE)
   } else message("Figure 5 skipped: needs reshape2")
-  # NOTE: the CLUMPAK grouping of replicate runs into modes (Kopelman et al.
-  # 2015) is done on the web server http://clumpak.tau.ac.il with the
-  # rep_*.<K>.meanQ files written above; it is not reproduced here.
 }
 
 
