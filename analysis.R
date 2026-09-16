@@ -229,6 +229,16 @@ desc <- data.frame(
 write.csv(desc, "outputs/descriptive_stats.csv", row.names = FALSE)
 print(desc)
 
+# Alignment of the marker sequences to the two reference genomes carried in
+# the DArT report (cucumber Chinese Long v3, melon DHL92 v4). Annotation
+# only: no analysis below uses genome position.
+aligned <- function(g) { ch <- lm[[paste0("Chrom_", g)]]; !(is.na(ch) | ch == "" | ch == "0") }
+cu <- aligned("Cucumber_ChineseLong_v3"); me <- aligned("Cucumis_melo_DHL92_v4")
+map <- data.frame(reference = c("cucumber_ChineseLong_v3", "melo_DHL92_v4", "either", "both"),
+                  prop_filtered_SNPs_aligned = round(c(mean(cu), mean(me), mean(cu | me), mean(cu & me)), 4))
+write.csv(map, "outputs/mapping_summary.csv", row.names = FALSE)
+print(map)
+
 
 # -----------------------------------------------------------------------------
 # 3. Diversity indices
