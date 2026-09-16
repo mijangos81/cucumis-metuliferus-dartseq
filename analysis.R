@@ -59,8 +59,14 @@ dir.create("figures", showWarnings = FALSE)   # manuscript figures (300 dpi PNG)
 # colour-blind-safe palette for the 9 sampling locations
 PAL9 <- c("#4477AA", "#EE6677", "#228833", "#CCBB44", "#66CCEE",
           "#AA3377", "#BBBBBB", "#EE8866", "#000000")
-png300 <- function(name, w = 8, h = 6)
+# Figures follow the PLOS ONE specification: at most 7.5 in wide and 8.75 in
+# high, 300 dpi, Arial 8-12 pt, multi-panel labels (A), (B).
+FONT <- "Arial"
+png300 <- function(name, w = 7.5, h = 6) {
   png(file.path("figures", name), width = w, height = h, units = "in", res = 300)
+  par(family = FONT, cex = 0.9)
+}
+theme_set(theme_bw(base_family = FONT, base_size = 10))
 
 
 # -----------------------------------------------------------------------------
@@ -203,7 +209,7 @@ if (all(sapply(c("sf", "rnaturalearth", "ggspatial"), has))) {
       geom_point(data = sites, aes(lon, lat, fill = loc), shape = 21, size = 4, colour = "black") +
       scale_fill_manual(values = PAL9, name = "Sampling location") +
       labs(x = NULL, y = NULL) + theme_bw()
-    ggsave("figures/Figure1.png", p1, width = 9, height = 7, dpi = 300)
+    ggsave("figures/Figure1.png", p1, width = 7.5, height = 5.8, dpi = 300)
   } else message("Figure 1 skipped: no usable coordinates in the metadata")
 } else message("Figure 1 skipped: needs sf, rnaturalearth and ggspatial")
 
@@ -278,10 +284,10 @@ pc_plot <- function(i, j, col, pch = 19, main = "") {
   plot(pca$scores[, i], pca$scores[, j], col = col, pch = pch, cex = 1.3, main = main,
        xlab = sprintf("PC%d (%.1f%%)", i, ve[i]), ylab = sprintf("PC%d (%.1f%%)", j, ve[j]))
 }
-png300("Figure2.png", w = 13, h = 6)
-par(mfrow = c(1, 2), mar = c(5, 5, 2, 1), oma = c(0, 0, 0, 8), xpd = NA)
-pc_plot(1, 2, PAL9[popf], main = "a"); pc_plot(1, 3, PAL9[popf], main = "b")
-legend(par("usr")[2] * 1.05, par("usr")[4], legend = locs, col = PAL9, pch = 19, bty = "n", title = "Location")
+png300("Figure2.png", w = 7.5, h = 3.9)
+par(mfrow = c(1, 2), mar = c(4, 4, 2, 0.5), oma = c(0, 0, 0, 5.5), xpd = NA, family = FONT, cex = 0.75)
+pc_plot(1, 2, PAL9[popf], main = "(A)"); pc_plot(1, 3, PAL9[popf], main = "(B)")
+legend(par("usr")[2] * 1.04, par("usr")[4], legend = locs, col = PAL9, pch = 19, bty = "n", title = "Location", cex = 0.9)
 dev.off()
 
 # Robustness: repeat the PCA after filtering to MAF >= 0.05 and correlate the
@@ -309,8 +315,8 @@ if (has("pheatmap")) {
   ann <- data.frame(Location = popf); rownames(ann) <- indNames(gl)
   pheatmap::pheatmap(G, annotation_row = ann, annotation_col = ann,
                      annotation_colors = list(Location = PAL9),
-                     show_rownames = FALSE, show_colnames = FALSE,
-                     filename = "figures/Figure3.png", width = 9, height = 8)
+                     show_rownames = FALSE, show_colnames = FALSE, fontfamily = FONT, fontsize = 9,
+                     filename = "figures/Figure3.png", width = 7.5, height = 6.7)
 } else message("Figure 3 skipped: needs pheatmap")
 
 
@@ -319,12 +325,12 @@ if (has("pheatmap")) {
 # -----------------------------------------------------------------------------
 D  <- gl.dist.ind(gl, method = "Czekanowski", plot.display = FALSE, verbose = 0)
 hc <- hclust(D, method = "average")                   # UPGMA
-png300("Figure6.png", w = 12, h = 6)
+png300("Figure6.png", w = 7.5, h = 4.5)
 if (has("dendextend")) {
-  dend <- dendextend::set(as.dendrogram(hc), "labels_cex", 0.5)
+  dend <- dendextend::set(as.dendrogram(hc), "labels_cex", 0.35)
   dendextend::labels_colors(dend) <- PAL9[popf][hc$order]
   plot(dend, ylab = "Czekanowski distance")
-} else plot(hc, cex = 0.5, main = "", xlab = "", sub = "", ylab = "Czekanowski distance")
+} else plot(hc, cex = 0.35, main = "", xlab = "", sub = "", ylab = "Czekanowski distance")
 dev.off()
 
 
@@ -379,7 +385,7 @@ if (!fs_ok) {
     geom_errorbar(aes(ymin = mean_marginal_likelihood - sd, ymax = mean_marginal_likelihood + sd), width = 0.15) +
     scale_x_continuous(breaks = Ks) +
     labs(x = "Number of clusters (K)", y = "Mean marginal likelihood") + theme_bw()
-  ggsave("figures/Figure4.png", p4, width = 7, height = 5, dpi = 300)
+  ggsave("figures/Figure4.png", p4, width = 6.5, height = 4.5, dpi = 300)
 
   # Figure 5: ancestry proportions for K = K_best - 1, K_best and K_best + 1
   # (best replicate per K), individuals ordered by sampling location.
@@ -391,10 +397,10 @@ if (!fs_ok) {
       d <- reshape2::melt(cbind(ind = seq_len(nrow(Q)), as.data.frame(Q)), id.vars = "ind")
       ggplot(d, aes(ind, value, fill = variable)) + geom_col(width = 1) +
         scale_fill_manual(values = unname(PAL9)) + labs(x = NULL, y = sprintf("K = %d", K)) +
-        theme_minimal() + theme(legend.position = "none", axis.text.x = element_blank(),
+        theme_minimal(base_family = FONT, base_size = 10) + theme(legend.position = "none", axis.text.x = element_blank(),
                                 panel.grid = element_blank())
     })
-    ggsave("figures/Figure5.png", patchwork::wrap_plots(panels, ncol = 1), width = 10, height = 6, dpi = 300)
+    ggsave("figures/Figure5.png", patchwork::wrap_plots(panels, ncol = 1), width = 7.5, height = 5, dpi = 300)
     Qb <- as.matrix(read.table(file.path(fsdir, sprintf("rep_%d.%d.meanQ", ml$best_rep[ml$K == K_best], K_best))))
     write.csv(data.frame(ind.name = indNames(gl), location = popf, Qb), "outputs/faststructure_Q_best.csv", row.names = FALSE)
     writeLines(as.character(K_best), "outputs/faststructure_K_best.txt")
@@ -465,12 +471,12 @@ cat(sprintf("Core retains %.1f%% of polymorphic loci; beats %.1f%% of random sub
 # pairs among the shortlisted genotypes (bottom); the 98% threshold is marked.
 PI <- pairwise_identity(M)
 short <- tab$ind.name[tab$shortlisted]
-png300("Figure7.png", w = 8, h = 8)
+png300("Figure7.png", w = 6.5, h = 7)
 par(mfrow = c(2, 1), mar = c(4.5, 4.5, 2, 1))
-hist(PI[upper.tri(PI)], breaks = 50, col = "grey80", border = "white", main = "All pairs",
+hist(PI[upper.tri(PI)], breaks = 50, col = "grey80", border = "white", main = "(A) All pairs",
      xlab = "Identical genotype calls (%)"); abline(v = 98, lty = 2, col = "red")
 PIs <- PI[short, short]
-hist(PIs[upper.tri(PIs)], breaks = 50, col = "grey80", border = "white", main = "Shortlisted genotypes",
+hist(PIs[upper.tri(PIs)], breaks = 50, col = "grey80", border = "white", main = "(B) Shortlisted genotypes",
      xlab = "Identical genotype calls (%)"); abline(v = 98, lty = 2, col = "red")
 dev.off()
 
@@ -485,17 +491,17 @@ acc <- t(sapply(steps, function(k) {
   else NA
   c(n = k, allelic_richness = ar, polymorphic_loci = n_poly(g)) }))
 write.csv(acc, "outputs/core_accumulation.csv", row.names = FALSE)
-png300("Figure8.png", w = 7, h = 8)
+png300("Figure8.png", w = 6, h = 7.5)
 par(mfrow = c(2, 1), mar = c(4.5, 4.5, 1, 1))
 plot(acc[, "n"], acc[, "allelic_richness"], type = "b", pch = 19, col = "deeppink",
-     xlab = "Number of genotypes", ylab = "Allelic richness")
+     xlab = "Number of genotypes", ylab = "Allelic richness", main = "(A)")
 plot(acc[, "n"], acc[, "polymorphic_loci"], type = "b", pch = 19, col = "deeppink",
-     xlab = "Number of genotypes", ylab = "Polymorphic loci")
+     xlab = "Number of genotypes", ylab = "Polymorphic loci", main = "(B)")
 dev.off()
 
 # Figure 9: PCA highlighting the selected (blue) and non-selected (green) genotypes.
 is_core <- indNames(gl) %in% core
-png300("Figure9.png", w = 8, h = 6)
+png300("Figure9.png", w = 7.5, h = 5.6)
 par(mar = c(5, 5, 2, 8), xpd = TRUE)
 pc_plot(1, 2, col = ifelse(is_core, "#4477AA", "#228833"), pch = ifelse(is_core, 19, 1))
 legend("topright", inset = c(-0.28, 0), legend = c("Selected", "Not selected"),
@@ -510,8 +516,8 @@ if (has("pheatmap")) {
   ann <- data.frame(Subset = factor(ifelse(is_core, "Selected", "Not selected"))); rownames(ann) <- indNames(gl)
   pheatmap::pheatmap(G, annotation_row = ann, annotation_col = ann,
                      annotation_colors = list(Subset = c(Selected = "#EE8866", "Not selected" = "#4477AA")),
-                     show_rownames = FALSE, show_colnames = FALSE,
-                     filename = "figures/Figure10.png", width = 9, height = 8)
+                     show_rownames = FALSE, show_colnames = FALSE, fontfamily = FONT, fontsize = 9,
+                     filename = "figures/Figure10.png", width = 7.5, height = 6.7)
 } else message("Figure 10 skipped: needs pheatmap")
 
 cat("\nDone. Tables written to outputs/, figures to figures/.\n")
