@@ -387,24 +387,36 @@ if (!fs_ok) {
     labs(x = "Number of clusters (K)", y = "Mean marginal likelihood") + theme_bw()
   ggsave("figures/Figure4.png", p4, width = 6.5, height = 4.5, dpi = 300)
 
-  # Figure 5: ancestry proportions for K = K_best - 1, K_best and K_best + 1
-  # (best replicate per K), individuals ordered by sampling location.
-  if (all(sapply(c("reshape2", "patchwork"), has))) {
-    ord <- order(popf)
-    panels <- lapply((K_best - 1):(K_best + 1), function(K) {
-      r <- ml$best_rep[ml$K == K]
-      Q <- as.matrix(read.table(file.path(fsdir, sprintf("rep_%d.%d.meanQ", r, K))))[ord, , drop = FALSE]
-      d <- reshape2::melt(cbind(ind = seq_len(nrow(Q)), as.data.frame(Q)), id.vars = "ind")
-      ggplot(d, aes(ind, value, fill = variable)) + geom_col(width = 1) +
-        scale_fill_manual(values = unname(PAL9)) + labs(x = NULL, y = sprintf("K = %d", K)) +
-        theme_minimal(base_family = FONT, base_size = 10) + theme(legend.position = "none", axis.text.x = element_blank(),
-                                panel.grid = element_blank())
-    })
-    ggsave("figures/Figure5.png", patchwork::wrap_plots(panels, ncol = 1), width = 7.5, height = 5, dpi = 300)
-    Qb <- as.matrix(read.table(file.path(fsdir, sprintf("rep_%d.%d.meanQ", ml$best_rep[ml$K == K_best], K_best))))
-    write.csv(data.frame(ind.name = indNames(gl), location = popf, Qb), "outputs/faststructure_Q_best.csv", row.names = FALSE)
-    writeLines(as.character(K_best), "outputs/faststructure_K_best.txt")
-  } else message("Figure 5 skipped: needs reshape2 and patchwork")
+  # Figure 5: ancestry proportions for K = 2 to 6. Replicate runs of each K
+  # are aligned with CLUMPP and grouped into modes with the CLUMPAK method
+  # (Kopelman et al. 2015) by dartR.popgen::gl.plot.faststructure(); each row
+  # is one K.mode (e.g. 4.1, 4.2). Individuals are ordered as in the
+  # Czekanowski dendrogram of Figure 6, so related genotypes sit together.
+  Kfig <- 2:6
+  q_list <- lapply(Kfig, function(K) lapply(reps, function(r) {
+    Q <- read.table(file.path(fsdir, sprintf("rep_%d.%d.meanQ", r, K))); colnames(Q) <- paste0("cluster", seq_len(K))
+    data.frame(id = indNames(gl), orig.pop = as.character(pop(gl)), Q) }))
+  names(q_list) <- Kfig; q_list <- lapply(q_list, function(y) { names(y) <- reps; y })
+  pdf(NULL)                                            # the function draws; we only need its output
+  modes <- gl.plot.faststructure(list(q_list = q_list), k.range = Kfig, den = FALSE, ind_name = FALSE)
+  dev.off()
+  if (has("reshape2")) {
+    d <- do.call(rbind, lapply(modes, function(m) {
+      long <- reshape2::melt(m[, c("Label", "K", "ord", grep("^cluster", names(m), value = TRUE))],
+                             id.vars = c("Label", "K", "ord"), variable.name = "cluster", value.name = "Q")
+      long }))
+    d$Label <- factor(d$Label, levels = indNames(gl)[hc$order])   # same order as the Fig 6 dendrogram
+    d$K <- factor(d$K, levels = unique(sapply(modes, function(m) m$K[1])))
+    p5 <- ggplot(d, aes(Label, Q, fill = cluster)) + geom_col(width = 1, colour = "black", linewidth = 0.05) +
+      facet_grid(K ~ ., switch = "y") + scale_fill_manual(values = unname(PAL9)[c(4, 2, 3, 5, 6, 1)]) +
+      scale_y_continuous(expand = c(0, 0)) + labs(x = NULL, y = NULL) +
+      theme_minimal(base_family = FONT, base_size = 8) +
+      theme(legend.position = "none", panel.grid = element_blank(), panel.spacing = unit(0.5, "mm"),
+            axis.text.y = element_blank(), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1, size = 3.5),
+            strip.text.y.left = element_text(angle = 0, size = 8), strip.placement = "outside")
+    ggsave("figures/Figure5.png", p5, width = 7.5, height = 6, dpi = 300)
+    write.csv(d, "outputs/faststructure_modes_K2-6.csv", row.names = FALSE)
+  } else message("Figure 5 skipped: needs reshape2")
   # NOTE: the CLUMPAK grouping of replicate runs into modes (Kopelman et al.
   # 2015) is done on the web server http://clumpak.tau.ac.il with the
   # rep_*.<K>.meanQ files written above; it is not reproduced here.
