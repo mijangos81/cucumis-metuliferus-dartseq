@@ -384,6 +384,24 @@ print(amova$results)
 print(amova$componentsofcovariance)
 capture.output(amova$results, amova$componentsofcovariance, amova$statphi, file = "outputs/amova.txt")
 
+# Sampling location is a sampling stratum, not a demonstrated biological
+# population, and several locations hold genotypes from more than one genetic
+# cluster. So, when fastSTRUCTURE ran (section 7), tabulate location against
+# the K = 3 cluster (S3 Table) and repeat the AMOVA with cluster as the
+# grouping, to see how much of the within-location variance is the
+# co-occurrence of distinct clusters at one site.
+if (file.exists("outputs/faststructure_Q_K3.csv")) {
+  Q  <- read.csv("outputs/faststructure_Q_K3.csv")
+  Q$cluster <- paste0("C", apply(Q[, c("V1", "V2", "V3")], 1, which.max))
+  xt <- table(location = Q$location, cluster = Q$cluster)
+  print(xt); write.csv(as.data.frame.matrix(xt), "outputs/location_by_cluster_K3.csv")
+  strata(gi) <- data.frame(cluster = Q$cluster[match(indNames(gl), Q$ind.name)])
+  amova_cl <- poppr.amova(gi, ~cluster, nperm = 9999, method = "ade4")
+  print(amova_cl$componentsofcovariance); print(amova_cl$statphi)
+  capture.output(amova_cl$results, amova_cl$componentsofcovariance, amova_cl$statphi,
+                 file = "outputs/amova_by_cluster.txt")
+}
+
 
 # -----------------------------------------------------------------------------
 # 9. Core subset of the most informative genotypes
