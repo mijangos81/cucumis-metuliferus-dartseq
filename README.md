@@ -38,7 +38,7 @@ contaminated during preparation (see the Methods of the manuscript).
 3. Diversity indices (Ho, He, FIS, PIC), overall and per location
 4. PCA (Figure 2), plus a check that the PCA is unchanged after filtering to
    MAF ≥ 0.05 (correlation of PC scores ≥ 0.999)
-5. Genomic relationship matrix, rrBLUP `A.mat()` (Figure 3)
+5. Genomic relationship matrix, rrBLUP `A.mat()`; heatmap with `gl.grm2()` (Figure 3)
 6. Dendrogram of Czekanowski distances (Figure 6)
 7. Population structure with fastSTRUCTURE, K = 1–10 with ten seeded replicates
    per K; K chosen by mean marginal likelihood and by the number of ancestry
@@ -58,9 +58,9 @@ contaminated during preparation (see the Methods of the manuscript).
   library(dartRverse); dartRverse_install()   # installs the dartR sub-packages
   ```
 
+- `dartR.spatial` (part of dartRverse) for the relationship-matrix heatmaps.
 - Optional, for individual figures (skipped with a message if absent):
-  `pheatmap`, `dendextend`, `reshape2`, `patchwork`, `hierfstat`, `sf`,
-  `rnaturalearth`, `ggspatial`.
+  `dendextend`, `reshape2`, `hierfstat`, `sf`, `rnaturalearth`, `ggspatial`.
 
 - **fastSTRUCTURE** and **plink** (step 7 only) — external programs, not R
   packages: <https://rajanil.github.io/fastStructure/>,

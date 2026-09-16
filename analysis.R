@@ -39,11 +39,12 @@
 library(dartRverse)   # read/filter genlight, PCA, distances, heterozygosity
 library(poppr)        # AMOVA
 library(rrBLUP)       # A.mat(): additive genomic relationship matrix
+library(dartR.spatial) # gl.grm2(): relationship-matrix heatmap (figures 3 and 10)
 library(ggplot2)      # figures 1, 4, 5
 
 # Optional packages: a figure that needs one of them is skipped if it is absent.
 has <- function(p) requireNamespace(p, quietly = TRUE)
-for (p in c("pheatmap", "dendextend", "reshape2", "patchwork", "hierfstat",
+for (p in c("dendextend", "reshape2", "hierfstat",
             "sf", "rnaturalearth", "ggspatial"))
   if (!has(p)) message("optional package '", p, "' not installed; the figure(s) using it will be skipped")
 
@@ -310,19 +311,12 @@ G <- rrBLUP::A.mat(M - 1, impute.method = "mean", return.imputed = FALSE)
 dimnames(G) <- list(indNames(gl), indNames(gl))
 saveRDS(G, "outputs/grm.rds")
 
-# Figure 3: heatmap of the relationship matrix, annotated by sampling location.
-# Colour scale centred on 0 (blue = less related than the sample average,
-# red = more related) and clipped at +/- 4, as in the original figure.
-HEAT_COL <- c(colorRampPalette(c("#0000FF", "#00FFFF"))(50), colorRampPalette(c("#FFFF00", "#FF0000"))(50))  # boundary at 0
-HEAT_BRK <- seq(-4, 4, length.out = 101)
-if (has("pheatmap")) {
-  ann <- data.frame(Location = popf); rownames(ann) <- indNames(gl)
-  pheatmap::pheatmap(pmin(pmax(G, -4), 4), annotation_row = ann, annotation_col = ann,
-                     annotation_colors = list(Location = PAL9), color = HEAT_COL, breaks = HEAT_BRK,
-                     border_color = NA, show_rownames = TRUE, show_colnames = TRUE, fontsize_row = 3, fontsize_col = 3,
-                     fontfamily = FONT, fontsize = 8, main = "Probability of identity by descent",
-                     filename = "figures/Figure3.png", width = 7.5, height = 6.7)
-} else message("Figure 3 skipped: needs pheatmap")
+# Figure 3: heatmap of the relationship matrix with the population colour bar,
+# drawn by dartR.spatial::gl.grm2() (the successor of gl.grm(), which produced
+# the original figure); its matrix is identical to rrBLUP::A.mat() above.
+png300("Figure3.png", w = 7.5, h = 6.7)
+invisible(gl.grm2(gl, plotheatmap = TRUE, palette_convergent = gl.colors("con"), legendx = 0, legendy = 0.5, verbose = 0))
+dev.off()
 
 
 # -----------------------------------------------------------------------------
@@ -534,18 +528,13 @@ legend("topright", inset = c(-0.28, 0), legend = c("Selected", "Not selected"),
        col = c("#4477AA", "#228833"), pch = c(19, 1), bty = "n")
 dev.off()
 
-# Figure 10: dendrogram + heatmap of pairwise relatedness (section 5 matrix),
-# annotated by selected / not selected. (The manuscript's kinship estimates
-# come from the external program EMIBD9; the additive relationship matrix is
-# used here so the figure is reproducible from R alone.)
-if (has("pheatmap")) {
-  ann <- data.frame(Subset = factor(ifelse(is_core, "Selected", "Not selected"))); rownames(ann) <- indNames(gl)
-  pheatmap::pheatmap(pmin(pmax(G, -4), 4), annotation_row = ann, annotation_col = ann,
-                     annotation_colors = list(Subset = c(Selected = "#EE8866", "Not selected" = "#4477AA")),
-                     color = HEAT_COL, breaks = HEAT_BRK, border_color = NA,
-                     show_rownames = TRUE, show_colnames = TRUE, fontsize_row = 3, fontsize_col = 3,
-                     fontfamily = FONT, fontsize = 8, main = "Pairwise relatedness of selected and non-selected genotypes",
-                     filename = "figures/Figure10.png", width = 7.5, height = 6.7)
-} else message("Figure 10 skipped: needs pheatmap")
+# Figure 10: the same relatedness heatmap with genotypes labelled as selected
+# or not selected (the manuscript's kinship estimates come from the external
+# program EMIBD9; the additive relationship matrix is used here so the figure
+# is reproducible from R alone).
+gl_sel <- gl; pop(gl_sel) <- factor(ifelse(is_core, "Selected", "Not selected"))
+png300("Figure10.png", w = 7.5, h = 6.7)
+invisible(gl.grm2(gl_sel, plotheatmap = TRUE, palette_convergent = gl.colors("con"), legendx = 0, legendy = 0.5, verbose = 0))
+dev.off()
 
 cat("\nDone. Tables written to outputs/, figures to figures/.\n")
