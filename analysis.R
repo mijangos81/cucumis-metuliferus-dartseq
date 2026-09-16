@@ -8,14 +8,15 @@
 #
 #  What this script does, in order (section numbers match the code below):
 #    1. Read the DArT SNP report and the sample metadata; populations = the
-#       9 geographic sampling locations
-#    2. Quality-filter the SNPs (-> 120 individuals x 5,875 SNPs) and report
+#       9 geographic sampling locations; exclude MP1 (contaminated library)
+#    2. Quality-filter the SNPs (-> 119 individuals) and report
 #       descriptive statistics of the retained dataset
 #    3. Diversity indices (Ho, He, FIS, PIC), overall and per location
 #    4. PCA, plus a check that skipping the MAF filter does not bias it
 #    5. Genomic relationship matrix (identity by descent among genotypes)
 #    6. Dendrogram of genetic distances (Czekanowski)
-#    7. Population structure with fastSTRUCTURE (K = 1..10, 10 replicates)
+#    7. Population structure with fastSTRUCTURE (K = 1..10, 10 replicates);
+#       K chosen by the mean marginal likelihood
 #    8. AMOVA (partitioning of variation among vs within locations)
 #    9. Selection and validation of a "core" set of the most informative
 #       genotypes
@@ -167,6 +168,18 @@ gl <- gl.read.dart(
 
 gl <- gl.sort(gl, sort.by = "ind", order.by = indNames(gl))  # order-independent
 
+# MP1 is excluded. Its reported genotype came from a technical-replicate
+# library that was contaminated during library preparation with DNA from
+# outside this project (read counts of the two MP1 libraries in DArT order
+# DCu24-9392: the foreign alleles occur in one library only). The DNA sample
+# itself is sound, but the reported calls are not; 119 genotypes remain, and
+# loci that were polymorphic only because of MP1 are removed.
+gl <- gl.drop.ind(gl, ind.list = "MP1", verbose = 0)
+n_before <- nLoc(gl)
+gl <- gl.filter.monomorphs(gl, verbose = 0)
+cat(sprintf("Excluded MP1: %d genotypes; %d loci monomorphic without MP1 removed, %d SNPs remain\n",
+            nInd(gl), n_before - nLoc(gl), nLoc(gl)))
+
 # Population = geographic SAMPLING LOCATION (metadata column "pop2"; 9 sites).
 # This is the grouping used for the AMOVA and for colouring the plots.
 pop(gl) <- gl$other$ind.metrics$pop2
@@ -207,7 +220,7 @@ gl <- gl.filter.reproducibility(gl, threshold = 0.99, verbose = 1)  # >= 99% rep
 # pruning. Rare alleles are informative for the diversity and core-subset aims;
 # section 4 checks that retaining them does not change the PCA structure.
 
-cat(sprintf("Filtered data: %d individuals x %d SNPs\n", nInd(gl), nLoc(gl)))  # 120 x 5875
+cat(sprintf("Filtered data: %d individuals x %d SNPs\n", nInd(gl), nLoc(gl)))
 saveRDS(gl, "outputs/genlight_filtered.rds")
 
 # Descriptive statistics of the retained SNPs (call rate, missingness, read
@@ -332,7 +345,7 @@ if (!fs_ok) {
   system2(PLINK, c("--file", file.path(fsdir, "gl_plink"), "--make-bed",
                    "--allow-extra-chr", "--out", file.path(fsdir, "gl_plink")), stdout = FALSE)
   Ks <- 1:10; reps <- 1:10
-  for (K in Ks) for (r in reps)
+  for (K in Ks) for (r in reps) if (!file.exists(file.path(fsdir, sprintf("rep_%d.%d.log", r, K))))   # skip runs already done
     system2(FASTSTRUCTURE, c(sprintf("-K %d", K),
                              sprintf("--input=%s",  file.path(fsdir, "gl_plink")),
                              sprintf("--output=%s", file.path(fsdir, sprintf("rep_%d", r))),
@@ -350,8 +363,16 @@ if (!fs_ok) {
   write.csv(ml_runs, "outputs/faststructure_marginal_likelihood_runs.csv", row.names = FALSE)
   write.csv(ml,      "outputs/faststructure_marginal_likelihood.csv",      row.names = FALSE)
   print(ml)
-  cat(sprintf("fastSTRUCTURE: K maximising the mean marginal likelihood = %d\n",
-              ml$K[which.max(ml$mean_marginal_likelihood)]))
+  K_best <- ml$K[which.max(ml$mean_marginal_likelihood)]
+  # fastSTRUCTURE's second criterion: number of components that together carry
+  # 99.99% of the ancestry (chooseK.py "model components"), at each K
+  used <- sapply(Ks, function(K) {
+    Q <- as.matrix(read.table(file.path(fsdir, sprintf("rep_%d.%d.meanQ", ml$best_rep[ml$K == K], K))))
+    m <- sort(colMeans(Q), decreasing = TRUE); which(cumsum(m) >= 0.9999)[1] })
+  ml$components_used <- used
+  write.csv(ml, "outputs/faststructure_marginal_likelihood.csv", row.names = FALSE)
+  cat(sprintf("fastSTRUCTURE: K maximising the mean marginal likelihood = %d; components used at K >= %d: %d\n",
+              K_best, K_best, used[K_best]))
 
   # Figure 4: mean marginal likelihood (+/- SD over replicates) against K.
   p4 <- ggplot(ml, aes(K, mean_marginal_likelihood)) + geom_line() + geom_point(size = 2) +
@@ -360,11 +381,11 @@ if (!fs_ok) {
     labs(x = "Number of clusters (K)", y = "Mean marginal likelihood") + theme_bw()
   ggsave("figures/Figure4.png", p4, width = 7, height = 5, dpi = 300)
 
-  # Figure 5: ancestry proportions for K = 2, 3, 4 (best replicate per K),
-  # individuals ordered by sampling location.
+  # Figure 5: ancestry proportions for K = K_best - 1, K_best and K_best + 1
+  # (best replicate per K), individuals ordered by sampling location.
   if (all(sapply(c("reshape2", "patchwork"), has))) {
     ord <- order(popf)
-    panels <- lapply(2:4, function(K) {
+    panels <- lapply((K_best - 1):(K_best + 1), function(K) {
       r <- ml$best_rep[ml$K == K]
       Q <- as.matrix(read.table(file.path(fsdir, sprintf("rep_%d.%d.meanQ", r, K))))[ord, , drop = FALSE]
       d <- reshape2::melt(cbind(ind = seq_len(nrow(Q)), as.data.frame(Q)), id.vars = "ind")
@@ -374,9 +395,9 @@ if (!fs_ok) {
                                 panel.grid = element_blank())
     })
     ggsave("figures/Figure5.png", patchwork::wrap_plots(panels, ncol = 1), width = 10, height = 6, dpi = 300)
-    write.csv(data.frame(ind.name = indNames(gl)[ord], location = popf[ord],
-                         as.matrix(read.table(file.path(fsdir, sprintf("rep_%d.3.meanQ", ml$best_rep[ml$K == 3]))))[ord, ]),
-              "outputs/faststructure_Q_K3.csv", row.names = FALSE)
+    Qb <- as.matrix(read.table(file.path(fsdir, sprintf("rep_%d.%d.meanQ", ml$best_rep[ml$K == K_best], K_best))))
+    write.csv(data.frame(ind.name = indNames(gl), location = popf, Qb), "outputs/faststructure_Q_best.csv", row.names = FALSE)
+    writeLines(as.character(K_best), "outputs/faststructure_K_best.txt")
   } else message("Figure 5 skipped: needs reshape2 and patchwork")
   # NOTE: the CLUMPAK grouping of replicate runs into modes (Kopelman et al.
   # 2015) is done on the web server http://clumpak.tau.ac.il with the
@@ -397,14 +418,17 @@ capture.output(amova$results, amova$componentsofcovariance, amova$statphi, file 
 # Sampling location is a sampling stratum, not a demonstrated biological
 # population, and several locations hold genotypes from more than one genetic
 # cluster. So, when fastSTRUCTURE ran (section 7), tabulate location against
-# the K = 3 cluster (S3 Table) and repeat the AMOVA with cluster as the
+# the best-K cluster (S3 Table) and repeat the AMOVA with cluster as the
 # grouping, to see how much of the within-location variance is the
 # co-occurrence of distinct clusters at one site.
-if (file.exists("outputs/faststructure_Q_K3.csv")) {
-  Q  <- read.csv("outputs/faststructure_Q_K3.csv")
-  Q$cluster <- paste0("C", apply(Q[, c("V1", "V2", "V3")], 1, which.max))
+if (file.exists("outputs/faststructure_Q_best.csv")) {
+  Q  <- read.csv("outputs/faststructure_Q_best.csv")
+  comp <- apply(Q[, grep("^V", names(Q))], 1, which.max)            # component of max membership
+  size_rank <- rank(-table(comp), ties.method = "first")             # renumber clusters by size (1 = largest)
+  Q$cluster <- paste0("C", size_rank[as.character(comp)])
+  write.csv(Q[, c("ind.name", "location", "cluster")], "outputs/cluster_assignment.csv", row.names = FALSE)
   xt <- table(location = Q$location, cluster = Q$cluster)
-  print(xt); write.csv(as.data.frame.matrix(xt), "outputs/location_by_cluster_K3.csv")
+  print(xt); write.csv(as.data.frame.matrix(xt), "outputs/location_by_cluster.csv")
   strata(gi) <- data.frame(cluster = Q$cluster[match(indNames(gl), Q$ind.name)])
   amova_cl <- poppr.amova(gi, ~cluster, nperm = 9999, method = "ade4")
   print(amova_cl$componentsofcovariance); print(amova_cl$statphi)
