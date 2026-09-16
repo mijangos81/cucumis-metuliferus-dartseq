@@ -192,7 +192,8 @@ pop(gl) <- gl$other$ind.metrics$pop2
 popf <- factor(pop(gl)); locs <- levels(popf); names(PAL9) <- locs
 write.csv(as.data.frame(table(location = popf)), "outputs/genotypes_per_location.csv", row.names = FALSE)
 
-# Figure 1: map of the sampling locations (public-domain Natural Earth basemap).
+# Figure 1: map of the sampling sites, one point per accession (public-domain
+# Natural Earth basemap).
 if (all(sapply(c("sf", "rnaturalearth", "ggspatial"), has))) {
   im <- gl$other$ind.metrics
   xy <- data.frame(loc = as.character(popf),
@@ -200,13 +201,12 @@ if (all(sapply(c("sf", "rnaturalearth", "ggspatial"), has))) {
                    lat = suppressWarnings(as.numeric(im$lat)))
   xy <- xy[is.finite(xy$lon) & is.finite(xy$lat), ]
   if (nrow(xy) > 0) {
-    sites <- aggregate(cbind(lon, lat) ~ loc, data = xy, FUN = mean)   # one point per location
     world <- rnaturalearth::ne_countries(scale = "medium", returnclass = "sf")
-    p1 <- ggplot(world) + geom_sf(fill = "grey96", colour = "grey70", linewidth = 0.2) +
-      coord_sf(xlim = range(sites$lon) + c(-3, 3), ylim = range(sites$lat) + c(-3, 3), expand = FALSE) +
+    p1 <- ggplot(world) + geom_sf(fill = "grey96", colour = "grey70", linewidth = 0.2) +   # one point per accession
+      coord_sf(xlim = range(xy$lon) + c(-3, 3), ylim = range(xy$lat) + c(-3, 3), expand = FALSE) +
       ggspatial::annotation_scale(location = "bl") +
       ggspatial::annotation_north_arrow(location = "tr", style = ggspatial::north_arrow_fancy_orienteering()) +
-      geom_point(data = sites, aes(lon, lat, fill = loc), shape = 21, size = 4, colour = "black") +
+      geom_point(data = xy, aes(lon, lat, fill = loc), shape = 21, size = 2.6, colour = "black", alpha = 0.8) +
       scale_fill_manual(values = PAL9, name = "Sampling location") +
       labs(x = NULL, y = NULL) + theme_bw()
     ggsave("figures/Figure1.png", p1, width = 7.5, height = 5.8, dpi = 300)
