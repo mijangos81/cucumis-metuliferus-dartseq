@@ -311,11 +311,16 @@ dimnames(G) <- list(indNames(gl), indNames(gl))
 saveRDS(G, "outputs/grm.rds")
 
 # Figure 3: heatmap of the relationship matrix, annotated by sampling location.
+# Colour scale centred on 0 (blue = less related than the sample average,
+# red = more related) and clipped at +/- 4, as in the original figure.
+HEAT_COL <- c(colorRampPalette(c("#0000FF", "#00FFFF"))(50), colorRampPalette(c("#FFFF00", "#FF0000"))(50))  # boundary at 0
+HEAT_BRK <- seq(-4, 4, length.out = 101)
 if (has("pheatmap")) {
   ann <- data.frame(Location = popf); rownames(ann) <- indNames(gl)
-  pheatmap::pheatmap(G, annotation_row = ann, annotation_col = ann,
-                     annotation_colors = list(Location = PAL9),
-                     show_rownames = FALSE, show_colnames = FALSE, fontfamily = FONT, fontsize = 9,
+  pheatmap::pheatmap(pmin(pmax(G, -4), 4), annotation_row = ann, annotation_col = ann,
+                     annotation_colors = list(Location = PAL9), color = HEAT_COL, breaks = HEAT_BRK,
+                     border_color = NA, show_rownames = TRUE, show_colnames = TRUE, fontsize_row = 3, fontsize_col = 3,
+                     fontfamily = FONT, fontsize = 8, main = "Probability of identity by descent",
                      filename = "figures/Figure3.png", width = 7.5, height = 6.7)
 } else message("Figure 3 skipped: needs pheatmap")
 
@@ -535,9 +540,11 @@ dev.off()
 # used here so the figure is reproducible from R alone.)
 if (has("pheatmap")) {
   ann <- data.frame(Subset = factor(ifelse(is_core, "Selected", "Not selected"))); rownames(ann) <- indNames(gl)
-  pheatmap::pheatmap(G, annotation_row = ann, annotation_col = ann,
+  pheatmap::pheatmap(pmin(pmax(G, -4), 4), annotation_row = ann, annotation_col = ann,
                      annotation_colors = list(Subset = c(Selected = "#EE8866", "Not selected" = "#4477AA")),
-                     show_rownames = FALSE, show_colnames = FALSE, fontfamily = FONT, fontsize = 9,
+                     color = HEAT_COL, breaks = HEAT_BRK, border_color = NA,
+                     show_rownames = TRUE, show_colnames = TRUE, fontsize_row = 3, fontsize_col = 3,
+                     fontfamily = FONT, fontsize = 8, main = "Pairwise relatedness of selected and non-selected genotypes",
                      filename = "figures/Figure10.png", width = 7.5, height = 6.7)
 } else message("Figure 10 skipped: needs pheatmap")
 
